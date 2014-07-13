@@ -1,9 +1,13 @@
 {
   "manifest_version": 2,
 
-  "name": "One-click Kittens",
-  "description": "This extension demonstrates a browser action with kittens.",
+  "name": "Concise",
+  "description": "Replay the composition of your tweet",
   "version": "1.0",
+
+  "permissions": [
+    "storage"
+  ],
 
   "content_scripts": [
     {
