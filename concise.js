@@ -1,5 +1,3 @@
-var testRecords = '[{"time":1405231438695,"text":"test la de la de la"},{"time":1405231438991,"text":"a"},{"time":1405231439092,"text":"asd"},{"time":1405231439194,"text":"asdf"},{"time":1405231440410,"text":"asd"},{"time":1405231440611,"text":"as"},{"time":1405231440686,"text":""},{"time":1405231440687,"text":""},{"time":1405231440719,"text":""},{"time":1405231440719,"text":""},{"time":1405231440741,"text":""},{"time":1405231440816,"text":""},{"time":1405231440817,"text":""},{"time":1405231440848,"text":""},{"time":1405231440917,"text":""},{"time":1405231440918,"text":""},{"time":1405231441019,"text":"t"},{"time":1405231441119,"text":"thi"},{"time":1405231441221,"text":"this"},{"time":1405231441322,"text":"this "},{"time":1405231441423,"text":"this is"},{"time":1405231441524,"text":"this is "},{"time":1405231441626,"text":"this is t"},{"time":1405231441727,"text":"this is th"},{"time":1405231441829,"text":"this is the "},{"time":1405231441929,"text":"this is the e"},{"time":1405231442032,"text":"this is the en"},{"time":1405231442132,"text":"this is the end"},{"time":1405231442233,"text":"this is the end "},{"time":1405231442336,"text":"this is the end o"},{"time":1405231442437,"text":"this is the end or"},{"time":1405231442541,"text":"this is the end or i"},{"time":1405231442639,"text":"this is the end or is"},{"time":1405231442740,"text":"this is the end or is "},{"time":1405231442941,"text":"this is the end or is i"},{"time":1405231443041,"text":"this is the end or is is"},{"time":1405231443142,"text":"this is the end or is isd"},{"time":1405231443347,"text":"this is the end or is isdas"},{"time":1405231443548,"text":"this is the end or is isdasf"},{"time":1405231444156,"text":"this is the end or is isdas"},{"time":1405231444360,"text":"this is the end or is isda"},{"time":1405231444562,"text":"this is the end or is is"},{"time":1405231444663,"text":"this is the end or is"},{"time":1405231444764,"text":"this is the end or"},{"time":1405231444865,"text":"this is the end"},{"time":1405231444967,"text":"this is the "},{"time":1405231445066,"text":"this is the"},{"time":1405231446056,"text":"this is the"}]'
-
 var records = [];
 
 /**
@@ -45,11 +43,20 @@ var mutationCallback = function(mutations) {
   });
 }
 
+var compareNodes = function(node1, node2) {
+  return (node1.text().replace(/\s/g,'') == node2.text().replace(/\s/g,''))
+}
+
 //checks stream for newly posted tweet
 var streamMutationCallback = function(){
-  if($(".my-tweet .tweet-text").first().text() == records[records.length-1].text){
+  var found = $(".my-tweet .tweet-text").first()
+  var expected = $(records[records.length-1].text)
+
+  if(compareNodes(found, expected)){
     var tweetID = $(".my-tweet").first().attr("data-tweet-id").toString();
-    chrome.storage.sync.set({ tweetID : "test"}, function() {
+    var obj = {}
+    obj[tweetID] = JSON.stringify(records)
+    chrome.storage.sync.set(obj, function() {
       console.log(tweetID + " saved");
       records = [];
     });
@@ -72,8 +79,8 @@ var replay = function($tweetText, record, remaining) {
   if(remaining.length > 0) {
     var nextRecord = remaining.pop()
     var sleepTime  = nextRecord.time - record.time 
-    
-    $tweetText.text(record.text)
+
+    $tweetText.html(record.text)
 
     setTimeout(
       function() { replay($tweetText, nextRecord, remaining) },
@@ -87,9 +94,8 @@ var replay = function($tweetText, record, remaining) {
  * then render the replay button
  */
 var renderPermalinkPage = function(id) {
-  var history = JSON.parse(testRecords).reverse() //lookupHistory(permalinkTweetId);
-
-  if(history) {
+  chrome.storage.sync.get(id, function(data) {
+    var history = JSON.parse(data[id]).reverse()
     var $tweetActions = $(".tweet-actions"); //menu el we want to add a replay button too
     var $tweetText    = $(".tweet-text"); //tdiv we want to modify the text of during the replay
     var $replayButton = $('<button class="replay"> replay this tweet!!! </button>'); //the replay button element we want to insert
@@ -101,7 +107,7 @@ var renderPermalinkPage = function(id) {
 
     //render replay button 
     $tweetActions.append($replayButton)
-  }
+  });
 }
 
 
