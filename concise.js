@@ -10,10 +10,10 @@ $( document ).ready(function() {
   //checks & saves changes in tweet
   var mutationCallback = function(mutations) {
     mutations.forEach(function(mutation) {
-      var text = $(mutation.target).text();
-      if(text !== "Compose new Tweet..."){
-        records.push({time: Date.now(), text: text});
-        console.log(text);
+      var newTweet = mutation.target.innerHTML;
+      if(newTweet !== "<div>Compose new Tweet...</div>" && (typeof newTweet !== 'undefined')){
+        records.push({time: Date.now(), text: newTweet});
+        console.log(newTweet);
       }
     });
   }
