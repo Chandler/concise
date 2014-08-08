@@ -55,9 +55,6 @@ var recordTweetBox = function(tweetBox){
           });
       }
     });
-    //var streamObserver = new MutationObserver(streamMutationCallback);
-    //var stream = $("#stream-items-id")[0];
-    //streamObserver.observe(stream, config);
   });
 }
 
@@ -74,22 +71,6 @@ var mutationCallback = function(mutations) {
 
 var compareNodes = function(node1, node2) {
   return (node1.text().replace(/\s/g,'') == node2.text().replace(/\s/g,''))
-}
-
-//checks stream for newly posted tweet
-var streamMutationCallback = function(){
-  var found = $(".my-tweet .tweet-text").first();
-  var expected = records[records.length-1].text;
-
-  if(compareNodes(found, expected)){
-    var tweetID = $(".my-tweet").first().attr("data-tweet-id").toString();
-    var obj = {};
-    obj[tweetID] = JSON.stringify(records)
-    chrome.storage.sync.set(obj, function() {
-      console.log(tweetID + " saved");
-      records = [];
-    });
-  }
 }
 
 /**
@@ -123,22 +104,47 @@ var replay = function($tweetText, record, remaining) {
  * then render the replay button
  */
 var renderPermalinkPage = function(id) {
-  chrome.storage.sync.get(id, function(data) {
-    var $tweetActions = $(".tweet-actions"); //menu el we want to add a replay button too
-    var $tweetText    = $(".tweet-text"); //tdiv we want to modify the text of during the replay
-    var $replayButton = $('<button class="replay"> Replay this tweet </button>'); //the replay button element we want to insert
+  
+  var tweetActions = $(".tweet-actions"); //menu el we want to add a replay button too
+  var tweetText    = $(".tweet-text"); //tdiv we want to modify the text of during the replay
+  var replayButton = $('<button class="replay"> Replay this tweet </button>'); //the replay button element we want to insert
 
+  //render replay button 
+  tweetActions.append(replayButton);
+
+
+  var postsRef = new Firebase("https://shining-fire-5019.firebaseio.com/tweets/"+id);
+  postsRef.on('value', function (snapshot) {
+    debugger
+    tweetActions.append(replayButton);
+    console.log(snapshot.val());
     //setup event lister on the replay button
-    $replayButton.click(function() {
+    replayButton.click(function() {
       debugger
-      var history = JSON.parse(data[id]).reverse();
-      replay($tweetText, history.pop(), history);
+      var history = JSON.parse(snapshot.val().tweet_history).reverse();
+      replay(tweetText, history.pop(), history);
     })
-
-    //render replay button 
-    $tweetActions.append($replayButton)
+  }, function (errorObject) {
+    console.log('The read failed: ' + errorObject.code);
   });
 }
+  // chrome.storage.sync.get(id, function(data) {
+  //   var $tweetActions = $(".tweet-actions"); //menu el we want to add a replay button too
+  //   var $tweetText    = $(".tweet-text"); //tdiv we want to modify the text of during the replay
+  //   var $replayButton = $('<button class="replay"> Replay this tweet </button>'); //the replay button element we want to insert
+
+  //   //setup event lister on the replay button
+  //   $replayButton.click(function() {
+  //     debugger
+  //     var history = JSON.parse(data[id]).reverse();
+  //     replay($tweetText, history.pop(), history);
+  //   })
+
+  //   //render replay button 
+  //   $tweetActions.append($replayButton)
+  // });
+
+
 
 
 /**
