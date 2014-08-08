@@ -7,11 +7,20 @@ $( document ).ready(function() {
 
   // if a tweetbox is found, start recording
   var tweetBox = $("#tweet-box-mini-home-profile")[0];
+  var user = $(".js-mini-current-user").attr("data-screen-name");
+  var userID = $(".js-mini-current-user").attr("data-user-id");
 
   if(tweetBox != null) { recordTweetBox(tweetBox) }
  
   // if a permalink page tweet id is found, load the permalink page stuff
-  getPermalinkId(renderPermalinkPage)
+  getPermalinkId(renderPermalinkPage);
+
+  var fb = new Firebase("https://shining-fire-5019.firebaseio.com/");
+  var userBase = fb.child("users");
+  
+  userBase.child(user).update({
+    user_id: userID
+  });
 });
 
 /**
@@ -26,17 +35,37 @@ var recordTweetBox = function(tweetBox){
   observer.observe(tweetBox, config);
 
   $(".tweet-action").click(function(){
-    var streamObserver = new MutationObserver(streamMutationCallback);
-    var stream = $("#stream-items-id")[0];
-    streamObserver.observe(stream, config);
+    var fb = new Firebase("https://shining-fire-5019.firebaseio.com/");
+    var user = $(".js-mini-current-user").attr("data-screen-name");
+    var tweetBase = fb.child("tweets");
+
+    var tweetGet = $.get("http://concise-server.azurewebsites.net/tweet/latest?id="+ user + "&count=1", function( data ){
+      debugger
+      console.log("data loaded");
+      var found = data[0].text;
+      var expected = records[records.length-1].text;
+      if(found.replace(/\s/g,'') == expected.replace(/\s/g,'')){  // if the tweet we get back is same as tweet we posted, minus whitespace
+        var tweetID = data[0].id_str;
+        var tweetHistory = JSON.stringify(records);
+        tweetBase.child(tweetID).set({
+            tweet_history: tweetHistory,
+            text: found,
+            user: data[0].user.screen_name,
+            time: data[0].created_at
+          });
+      }
+    });
+    //var streamObserver = new MutationObserver(streamMutationCallback);
+    //var stream = $("#stream-items-id")[0];
+    //streamObserver.observe(stream, config);
   });
 }
 
 //checks & saves changes in tweet
 var mutationCallback = function(mutations) {
   mutations.forEach(function(mutation) {
-    var newTweet = mutation.target.innerHTML;
-    if(newTweet !== "<div>Compose new Tweet...</div>" && (typeof newTweet !== 'undefined')){
+    var newTweet = mutation.target.innerText;
+    if((newTweet.indexOf("Compose new Tweet") == -1) && (typeof newTweet !== 'undefined')){
       records.push({time: Date.now(), text: newTweet});
       console.log(newTweet);
     }
@@ -49,12 +78,12 @@ var compareNodes = function(node1, node2) {
 
 //checks stream for newly posted tweet
 var streamMutationCallback = function(){
-  var found = $(".my-tweet .tweet-text").first()
-  var expected = $(records[records.length-1].text)
+  var found = $(".my-tweet .tweet-text").first();
+  var expected = records[records.length-1].text;
 
   if(compareNodes(found, expected)){
     var tweetID = $(".my-tweet").first().attr("data-tweet-id").toString();
-    var obj = {}
+    var obj = {};
     obj[tweetID] = JSON.stringify(records)
     chrome.storage.sync.set(obj, function() {
       console.log(tweetID + " saved");
@@ -95,14 +124,15 @@ var replay = function($tweetText, record, remaining) {
  */
 var renderPermalinkPage = function(id) {
   chrome.storage.sync.get(id, function(data) {
-    var history = JSON.parse(data[id]).reverse()
     var $tweetActions = $(".tweet-actions"); //menu el we want to add a replay button too
     var $tweetText    = $(".tweet-text"); //tdiv we want to modify the text of during the replay
-    var $replayButton = $('<button class="replay"> replay this tweet!!! </button>'); //the replay button element we want to insert
+    var $replayButton = $('<button class="replay"> Replay this tweet </button>'); //the replay button element we want to insert
 
     //setup event lister on the replay button
-    $replayButton.click(function() { 
-      replay($tweetText, history.pop(), history)
+    $replayButton.click(function() {
+      debugger
+      var history = JSON.parse(data[id]).reverse();
+      replay($tweetText, history.pop(), history);
     })
 
     //render replay button 

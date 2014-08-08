@@ -6,7 +6,10 @@
   "version": "1.0",
 
   "permissions": [
-    "storage"
+    "storage",
+    "http://*.twitter.com/",
+    "https://*.twitter.com/",
+    "http://concise-server.azurewebsites.net/*"
   ],
 
   "content_scripts": [
@@ -14,7 +17,8 @@
       "matches": ["https://twitter.com/*"],
       "js": [
         "jquery.js",
-        "concise.js"
+        "concise.js",
+        "firebase-1.0.15.js"
       ]
     }
   ]
